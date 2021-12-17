@@ -1,0 +1,88 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+	<title>Test 2</title>
+	<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.0/themes/base/jquery-ui.css" />
+	<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.0/themes/base/jquery.ui.autocomplete.css" />
+	<script src="http://code.jquery.com/jquery-1.8.3.js"></script>
+	<script src="http://code.jquery.com/ui/1.10.0/jquery-ui.js"></script>
+
+
+
+	<script>
+		
+// Parse an item and create an title/value hash table with all the properties available
+function getFields(results, requestUrl) {
+    r = {};
+
+    if (results != undefined) {
+        if (results.Query != undefined) {
+            r["Query"] = results.Query;
+            r["Path"] = requestUrl + "?k=" + results.Query;
+        }
+        else {
+            r["Query"] = results;
+            r["Path"] = requestUrl + "?k=" + results;
+        }
+    }
+    return r;
+}
+
+function autocompletefn(controlId,requestUrl)
+{
+    var autocomplete = $(controlId).autocomplete({
+        minLength: 3,
+        source: function (request, response) {
+            $.ajax({
+                beforeSend: function (request) {
+                    request.setRequestHeader("Accept", "application/json;odata=verbose;charset=utf-8");
+                },
+
+                url: "http://localhost/api.php?customer_name=" + request.term + "'&fprequerysuggestions=true",
+                dataType: "json",
+                success: function (data) {
+                    response($.map(data.d.suggest.Queries.results, function (item) {
+                        return {
+                            fields: getFields(item, requestUrl)
+                        }
+                    }));
+                },
+                error: function (data) {
+                    console.log('search error');
+                }
+            });
+        },
+        // Run this when the item is in focused (not selected)
+        focus: function (event, ui) {
+
+            return false;
+        },
+        // Run this when the item is selected
+        select: function (event, ui) {
+            location.href = ui.item.fields.Path;
+
+        },
+        appendTo: $('#menu-container')
+    }).data("uiAutocomplete")._renderItem = function (ul, item) {
+        return $("<li>").append('<a>' + item.fields.Query + '</a>')
+            .appendTo(ul);
+    };
+}   
+
+$(document).ready(function () {
+        autocompletefn("#restSearch", "https://sitecollectionurl/Pages/Results.aspx");   
+});
+
+	</script>
+</head>
+
+<body>
+	
+	<div id="menu-container">
+		<input type="text" id="restSearch" />
+	</div>
+
+</body>
+
+</html>
